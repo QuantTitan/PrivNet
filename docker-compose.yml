@@ -39,6 +39,25 @@ services:
       private_network:
         ipv4_address: 10.2.0.3
 
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    hostname: pihole
+    dns:
+      - 127.0.0.1
+    environment:
+      TZ: "America/Los_Angeles"
+      WEBPASSWORD: ""
+      ServerIP: 10.2.0.100 # Internal IP of pihole
+    cap_add:
+      - NET_ADMIN
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.100
+
+
+
   wireguard-ui:
     depends_on: [wireguard]
     container_name: wireguard-ui
