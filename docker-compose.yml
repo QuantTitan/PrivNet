@@ -1,0 +1,60 @@
+version: "1.0"
+networks:
+  private_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
+
+services:
+  wireguard:
+    image: linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles 
+      - SERVERPORT=51820
+      - PEERS=1 
+      - INTERNAL_SUBNET=10.6.0.0
+    volumes:
+      - ./wireguard:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - "51820:51820/udp"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "wireguard"
+    restart: unless-stopped
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.3
+
+  wireguard-ui:
+    depends_on: [wireguard]
+    container_name: wireguard-ui
+    image: ngoduykhanh/wireguard-ui:latest
+    restart: unless-stopped
+    hostname: wireguard-ui
+    dns:
+      - 127.0.0.1
+    environment:
+      - EMAIL_FROM_NAME
+    logging:
+      driver: json-file          
+    volumes:
+      - ./db:/app/db
+      - ./wireguard:/etc/wireguard
+    cap_add:
+      - NET_ADMIN
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.10
