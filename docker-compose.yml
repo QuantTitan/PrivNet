@@ -1,4 +1,5 @@
 version: "1.0"
+
 networks:
   private_network:
     ipam:
@@ -16,7 +17,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=America/Los_Angeles 
+      - TZ=America/Los_Angeles
       - SERVERPORT=51820
       - PEERS=1 
       - INTERNAL_SUBNET=10.6.0.0
@@ -47,9 +48,17 @@ services:
     dns:
       - 127.0.0.1
     environment:
+      - SENDGRID_API_KEY
+      - EMAIL_FROM_ADDRESS
       - EMAIL_FROM_NAME
+      - SESSION_SECRET
+      - WGUI_USERNAME=admin
+      - WGUI_PASSWORD=password
+      - WG_CONF_TEMPLATE
     logging:
-      driver: json-file          
+      driver: json-file
+      options:
+        max-size: 50m            
     volumes:
       - ./db:/app/db
       - ./wireguard:/etc/wireguard
