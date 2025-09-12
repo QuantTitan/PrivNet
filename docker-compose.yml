@@ -1,5 +1,3 @@
-version: "1.0"
-
 networks:
   private_network:
     ipam:
@@ -9,6 +7,7 @@ networks:
 
 services:
   wireguard:
+    depends_on: [pihole]
     image: linuxserver/wireguard
     container_name: wireguard
     cap_add:
@@ -17,15 +16,19 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=America/Los_Angeles
+      - TZ=America/Los_Angeles # Change to your timezone
       - SERVERPORT=51820
-      - PEERS=1 
+      #- SERVERURL=my.ddns.net #optional - For use with DDNS (Uncomment to use)
+      - PEERS=1 # How many peers to generate for you (clients)
+      - PEERDNS=10.2.0.100 # Set it to point to pihole
       - INTERNAL_SUBNET=10.6.0.0
     volumes:
       - ./wireguard:/config
       - /lib/modules:/lib/modules
     ports:
       - "51820:51820/udp"
+    dns:
+      - 10.2.0.100 # Points to pihole
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     logging:
@@ -48,15 +51,44 @@ services:
       - 127.0.0.1
     environment:
       TZ: "America/Los_Angeles"
-      WEBPASSWORD: ""
+      WEBPASSWORD: "" 
       ServerIP: 10.2.0.100 # Internal IP of pihole
+      DNS2: 10.2.0.200 # If we don't specify two, it will auto pick google.
+    volumes:
+      - "./etc-pihole/:/etc/pihole/"
+      - "./etc-dnsmasq.d/:/etc/dnsmasq.d/"
     cap_add:
       - NET_ADMIN
     networks:
       private_network:
         ipv4_address: 10.2.0.100
 
-
+  shadowsocks:
+    depends_on: [unbound, pihole]
+    image: shadowsocks/shadowsocks-libev:latest
+    container_name: shadowsocks
+    environment:
+      - TZ=America/Los_Angeles
+      - PASSWORD=Your_password
+      - METHOD=chacha20-ietf-poly1305
+      - ARGS=--fast-open
+      - SERVER_ADDR=10.2.0.50
+      - DNS_ADDRS=10.2.0.100,10.2.0.200
+    ports:
+      - "8388:8388"
+      - "8388:8388/udp"
+    volumes:
+      - ./shadowsock:/etc/shadowsocks-libev
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "shadowsocks"
+    restart: unless-stopped
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.50
 
   wireguard-ui:
     depends_on: [wireguard]
