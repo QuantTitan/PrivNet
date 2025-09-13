@@ -6,8 +6,16 @@ networks:
         - subnet: 10.2.0.0/24
 
 services:
+  unbound:
+    image: "mvance/unbound:latest"
+    container_name: unbound
+    hostname: "unbound"
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.200
+
   wireguard:
-    depends_on: [pihole]
+    depends_on: [unbound, pihole]
     image: linuxserver/wireguard
     container_name: wireguard
     cap_add:
@@ -29,6 +37,7 @@ services:
       - "51820:51820/udp"
     dns:
       - 10.2.0.100 # Points to pihole
+      - 10.2.0.200 # Points to unbound
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     logging:
@@ -43,16 +52,19 @@ services:
         ipv4_address: 10.2.0.3
 
   pihole:
+    depends_on: [unbound]
     container_name: pihole
     image: pihole/pihole:latest
     restart: unless-stopped
     hostname: pihole
     dns:
       - 127.0.0.1
+      - 10.2.0.200 # Points to unbound
     environment:
       TZ: "America/Los_Angeles"
       WEBPASSWORD: "" 
       ServerIP: 10.2.0.100 # Internal IP of pihole
+      DNS1: 10.2.0.200 # Unbound IP
       DNS2: 10.2.0.200 # If we don't specify two, it will auto pick google.
     volumes:
       - "./etc-pihole/:/etc/pihole/"
@@ -98,6 +110,7 @@ services:
     hostname: wireguard-ui
     dns:
       - 127.0.0.1
+      - 10.2.0.200 # Points to unbound
     environment:
       - SENDGRID_API_KEY
       - EMAIL_FROM_ADDRESS
