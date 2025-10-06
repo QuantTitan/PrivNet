@@ -96,6 +96,12 @@ services:
       - "8388:8388/udp"
     volumes:
       - ./shadowsock:/etc/shadowsocks-libev
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "shadowsocks"
     restart: unless-stopped
     networks:
       private_network:
