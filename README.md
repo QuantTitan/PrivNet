@@ -31,6 +31,63 @@ This project is designed for users who want a private, censorship-resistant, and
 
 ---
 
+## setup.sh
+```bash
+#!/bin/bash
+
+set -e  # Exit on errors
+
+echo "=== Updating system ==="
+sudo apt-get update -y && sudo apt-get upgrade -y
+
+echo "=== Installing prerequisites ==="
+sudo apt-get install -y \
+    curl \
+    git \
+    apt-transport-https \
+    ca-certificates \
+    gnupg-agent \
+    software-properties-common
+
+echo "=== Adding Docker GPG key ==="
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+echo "=== Adding Docker repository ==="
+sudo add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) \
+        stable"
+
+echo "=== Installing Docker Engine ==="
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+echo "=== Installing Docker Compose v2 ==="
+sudo apt-get install -y docker-compose-plugin
+
+# Make docker-compose command available (optional)
+if ! command -v docker-compose &> /dev/null; then
+    sudo ln -s /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose || true
+fi
+
+echo "=== Docker version ==="
+docker --version
+docker compose version
+
+echo "=== Cloning ShadWireHole repo ==="
+git clone https://github.com/QuantTitan/PrivNet.git
+
+cd PrivNet
+
+echo "=== Starting services ==="
+sudo docker compose up -d
+
+echo "=== Installation Complete ==="
+echo "WireGuard + Pi-hole + Unbound + Shadowsocks are now running."
+echo "Use: sudo docker compose logs -f  to view logs."
+```
+---
+
 ## 📦 What the Setup Script Does
 
 The `setup.sh` script performs:
